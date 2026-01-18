@@ -9,7 +9,7 @@
     "start": "npm run start --workspace=@anesthesia/app",
     "dev:web": "npm run web --workspace=@anesthesia/app",
     "dev:mobile": "npm run start --workspace=@anesthesia/app",
-    "build:web": "npm run build:web --workspace=@anesthesia/app",
+    "build:web": "npm run build:web --workspace=@anesthesia/app && cp -r packages/app/dist .",
     "build:android:preview": "npm run build:android:preview --workspace=@anesthesia/app",
     "build:ios:preview": "npm run build:ios:preview --workspace=@anesthesia/app",
     "typecheck": "npm run typecheck --workspaces --if-present"
