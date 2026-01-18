@@ -118,10 +118,11 @@ function exportPDFWeb(session: AnesthesiaSession): void {
       </style>
     </head>
     <body>
-      <h1>獸醫麻醉監測記錄</h1>
+      <h1>${session.patientInfo.hospitalName}麻醉監測記錄表</h1>
 
       <h2>病患資料</h2>
       <table class="info-table">
+        <tr><td>動物醫院</td><td>${session.patientInfo.hospitalName}</td></tr>
         <tr><td>病患名稱</td><td>${session.patientInfo.patientName}</td></tr>
         <tr><td>病例編號</td><td>${session.patientInfo.caseNumber}</td></tr>
         <tr><td>動物種別</td><td>${SPECIES_LABELS[session.patientInfo.species]}</td></tr>
@@ -225,10 +226,11 @@ function generatePDFHTML(session: AnesthesiaSession): string {
       </style>
     </head>
     <body>
-      <h1>獸醫麻醉監測記錄</h1>
+      <h1>${session.patientInfo.hospitalName}麻醉監測記錄表</h1>
 
       <h2>病患資料</h2>
       <table class="info-table">
+        <tr><td>動物醫院</td><td>${session.patientInfo.hospitalName}</td></tr>
         <tr><td>病患名稱</td><td>${session.patientInfo.patientName}</td></tr>
         <tr><td>病例編號</td><td>${session.patientInfo.caseNumber}</td></tr>
         <tr><td>動物種別</td><td>${SPECIES_LABELS[session.patientInfo.species]}</td></tr>

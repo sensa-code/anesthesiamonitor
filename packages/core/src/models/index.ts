@@ -1,6 +1,7 @@
 export type Species = 'dog' | 'cat' | 'other';
 
 export interface PatientInfo {
+  hospitalName: string;   // 動物醫院名
   patientName: string;
   caseNumber: string;
   weight: number;

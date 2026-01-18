@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,13 @@ import {
   Alert,
   FlatList,
   Platform,
+  LayoutChangeEvent,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { VitalRecord, AnesthesiaSession, parseNumber, formatTime } from '@anesthesia/core';
 import { RootStackParamList } from '../types';
 import VitalInput from '../components/VitalInput';
+import ResizableDivider from '../components/ResizableDivider';
 import { saveSession } from '../services/storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Monitoring'>;
@@ -32,6 +34,20 @@ export default function MonitoringScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const isResumed = route.params.isResumed || false;
+
+  // Web-only: resizable split ratio (0.55 = 55% for input section)
+  const [splitRatio, setSplitRatio] = useState(0.55);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  const handleContainerLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    // Subtract end button height (52 + 16*2 = 84) to get available content height
+    setContainerHeight(height - 84);
+  }, []);
+
+  const handleResize = useCallback((ratio: number) => {
+    setSplitRatio(ratio);
+  }, []);
 
   useEffect(() => {
     const save = async () => {
@@ -206,11 +222,31 @@ export default function MonitoringScreen({ navigation, route }: Props) {
     );
   };
 
+  // Calculate dynamic heights for web
+  const dividerHeight = 22; // 14px height + 8px margin
+  const inputSectionHeight = Platform.OS === 'web' && containerHeight > 0
+    ? containerHeight * splitRatio
+    : undefined;
+  const recordsSectionHeight = Platform.OS === 'web' && containerHeight > 0
+    ? containerHeight * (1 - splitRatio) - dividerHeight
+    : undefined;
+
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.inputSection} contentContainerStyle={styles.inputContent}>
+    <View style={styles.container} onLayout={handleContainerLayout}>
+      <ScrollView
+        style={[
+          styles.inputSection,
+          Platform.OS === 'web' && inputSectionHeight
+            ? { maxHeight: inputSectionHeight, minHeight: inputSectionHeight, height: inputSectionHeight, flex: 0 }
+            : null,
+        ]}
+        contentContainerStyle={styles.inputContent}
+      >
         <View style={styles.patientInfo}>
-          <Text style={styles.patientName}>{session.patientInfo.patientName}</Text>
+          <View>
+            <Text style={styles.hospitalName}>{session.patientInfo.hospitalName}</Text>
+            <Text style={styles.patientName}>{session.patientInfo.patientName}</Text>
+          </View>
           <Text style={styles.caseNumber}>病例: {session.patientInfo.caseNumber}</Text>
         </View>
 
@@ -336,7 +372,24 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.recordsSection}>
+      {Platform.OS === 'web' && (
+        <ResizableDivider
+          currentRatio={splitRatio}
+          onResize={handleResize}
+          containerHeight={containerHeight}
+          minTopRatio={0.1}
+          maxTopRatio={0.9}
+        />
+      )}
+
+      <View
+        style={[
+          styles.recordsSection,
+          Platform.OS === 'web' && recordsSectionHeight
+            ? { maxHeight: recordsSectionHeight, minHeight: recordsSectionHeight, height: recordsSectionHeight, flex: 0 }
+            : null,
+        ]}
+      >
         <Text style={styles.recordsTitle}>
           已記錄: {session.records.length} 筆
         </Text>
@@ -376,6 +429,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 12,
     borderRadius: 8,
+  },
+  hospitalName: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
   },
   patientName: {
     fontSize: 18,

@@ -18,6 +18,7 @@ import { RootStackParamList } from '../types';
 type Props = NativeStackScreenProps<RootStackParamList, 'PatientInfo'>;
 
 export default function PatientInfoScreen({ navigation }: Props) {
+  const [hospitalName, setHospitalName] = useState('');
   const [patientName, setPatientName] = useState('');
   const [caseNumber, setCaseNumber] = useState('');
   const [weight, setWeight] = useState('');
@@ -32,6 +33,10 @@ export default function PatientInfoScreen({ navigation }: Props) {
   };
 
   const validateForm = (): boolean => {
+    if (!hospitalName.trim()) {
+      showAlert('請輸入動物醫院名');
+      return false;
+    }
     if (!patientName.trim()) {
       showAlert('請輸入病患名稱');
       return false;
@@ -53,6 +58,7 @@ export default function PatientInfoScreen({ navigation }: Props) {
     const session: AnesthesiaSession = {
       id: generateSessionId(),
       patientInfo: {
+        hospitalName: hospitalName.trim(),
         patientName: patientName.trim(),
         caseNumber: caseNumber.trim(),
         weight: parseFloat(weight),
@@ -75,6 +81,17 @@ export default function PatientInfoScreen({ navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>動物醫院名 *</Text>
+          <TextInput
+            style={styles.input}
+            value={hospitalName}
+            onChangeText={setHospitalName}
+            placeholder="輸入動物醫院名稱"
+            placeholderTextColor="#999"
+          />
+        </View>
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>病患名稱 *</Text>
           <TextInput

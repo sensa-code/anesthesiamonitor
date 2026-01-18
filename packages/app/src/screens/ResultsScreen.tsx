@@ -50,6 +50,10 @@ export default function ResultsScreen({ navigation, route }: Props) {
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>病患資訊</Text>
           <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>動物醫院</Text>
+            <Text style={styles.infoValue}>{session.patientInfo.hospitalName}</Text>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>病患名稱</Text>
             <Text style={styles.infoValue}>{session.patientInfo.patientName}</Text>
           </View>
