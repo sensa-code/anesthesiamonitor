@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: anesthesia-monitor
+    runtime: static
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
