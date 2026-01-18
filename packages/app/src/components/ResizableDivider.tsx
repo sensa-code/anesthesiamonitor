@@ -20,12 +20,13 @@ export default function ResizableDivider({
   const startY = useRef(0);
   const startRatio = useRef(currentRatio);
 
+  // Mouse events for desktop
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (Platform.OS !== 'web') return;
     e.preventDefault();
     isDragging.current = true;
     startY.current = e.clientY;
-    startRatio.current = currentRatio; // Capture current ratio at drag start
+    startRatio.current = currentRatio;
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
   }, [currentRatio]);
@@ -38,9 +39,7 @@ export default function ResizableDivider({
     const deltaRatio = deltaY / containerHeight;
     let newRatio = startRatio.current + deltaRatio;
 
-    // Clamp the ratio within bounds
     newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
-
     onResize(newRatio);
   }, [containerHeight, minTopRatio, maxTopRatio, onResize]);
 
@@ -53,20 +52,57 @@ export default function ResizableDivider({
     }
   }, []);
 
+  // Touch events for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (Platform.OS !== 'web') return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    isDragging.current = true;
+    startY.current = touch.clientY;
+    startRatio.current = currentRatio;
+  }, [currentRatio]);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging.current || Platform.OS !== 'web') return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - startY.current;
+    const deltaRatio = deltaY / containerHeight;
+    let newRatio = startRatio.current + deltaRatio;
+
+    newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
+    onResize(newRatio);
+  }, [containerHeight, minTopRatio, maxTopRatio, onResize]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (Platform.OS !== 'web') return;
+    isDragging.current = false;
+  }, []);
+
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const onMove = (e: MouseEvent) => handleMouseMove(e);
-    const onUp = () => handleMouseUp();
+    // Mouse event listeners
+    const onMouseMove = (e: MouseEvent) => handleMouseMove(e);
+    const onMouseUp = () => handleMouseUp();
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    // Touch event listeners
+    const onTouchMove = (e: TouchEvent) => handleTouchMove(e);
+    const onTouchEnd = () => handleTouchEnd();
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
 
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   // Only render on web
   if (Platform.OS !== 'web') {
@@ -76,8 +112,9 @@ export default function ResizableDivider({
   return (
     <View
       style={styles.divider}
-      // @ts-ignore - web-specific event
+      // @ts-ignore - web-specific events
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       <View style={styles.handle} />
     </View>
@@ -86,18 +123,20 @@ export default function ResizableDivider({
 
 const styles = StyleSheet.create({
   divider: {
-    height: 14,
+    height: 24,
     backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
     cursor: 'ns-resize' as any,
     marginHorizontal: 16,
-    borderRadius: 7,
+    borderRadius: 12,
     marginVertical: 4,
+    // Make touch target larger for mobile
+    touchAction: 'none' as any,
   },
   handle: {
-    width: 50,
-    height: 5,
+    width: 60,
+    height: 6,
     backgroundColor: '#9e9e9e',
     borderRadius: 3,
   },

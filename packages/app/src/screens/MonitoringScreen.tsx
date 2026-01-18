@@ -223,7 +223,7 @@ export default function MonitoringScreen({ navigation, route }: Props) {
   };
 
   // Calculate dynamic heights for web
-  const dividerHeight = 22; // 14px height + 8px margin
+  const dividerHeight = 32; // 24px height + 8px margin
   const inputSectionHeight = Platform.OS === 'web' && containerHeight > 0
     ? containerHeight * splitRatio
     : undefined;
