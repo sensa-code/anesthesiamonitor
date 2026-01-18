@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import React, { useRef, useCallback, useEffect, useMemo } from 'react';
+import { View, StyleSheet, Platform, PanResponder, GestureResponderEvent, PanResponderGestureState } from 'react-native';
 
 interface ResizableDividerProps {
   currentRatio: number;
@@ -16,11 +16,32 @@ export default function ResizableDivider({
   minTopRatio = 0.1,
   maxTopRatio = 0.9,
 }: ResizableDividerProps) {
-  const isDragging = useRef(false);
-  const startY = useRef(0);
   const startRatio = useRef(currentRatio);
 
-  // Mouse events for desktop
+  // ============ Native (React Native) Implementation ============
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      startRatio.current = currentRatio;
+    },
+    onPanResponderMove: (_event: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+      if (containerHeight <= 0) return;
+
+      const deltaRatio = gestureState.dy / containerHeight;
+      let newRatio = startRatio.current + deltaRatio;
+      newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
+      onResize(newRatio);
+    },
+    onPanResponderRelease: () => {
+      // Drag ended
+    },
+  }), [currentRatio, containerHeight, minTopRatio, maxTopRatio, onResize]);
+
+  // ============ Web Implementation ============
+  const isDragging = useRef(false);
+  const startY = useRef(0);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (Platform.OS !== 'web') return;
     e.preventDefault();
@@ -52,7 +73,6 @@ export default function ResizableDivider({
     }
   }, []);
 
-  // Touch events for mobile
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (Platform.OS !== 'web') return;
     e.preventDefault();
@@ -83,11 +103,8 @@ export default function ResizableDivider({
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    // Mouse event listeners
     const onMouseMove = (e: MouseEvent) => handleMouseMove(e);
     const onMouseUp = () => handleMouseUp();
-
-    // Touch event listeners
     const onTouchMove = (e: TouchEvent) => handleTouchMove(e);
     const onTouchEnd = () => handleTouchEnd();
 
@@ -104,18 +121,23 @@ export default function ResizableDivider({
     };
   }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  // Only render on web
-  if (Platform.OS !== 'web') {
-    return null;
+  // ============ Render ============
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        style={styles.divider}
+        // @ts-ignore - web-specific events
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+      >
+        <View style={styles.handle} />
+      </View>
+    );
   }
 
+  // Native (iOS/Android)
   return (
-    <View
-      style={styles.divider}
-      // @ts-ignore - web-specific events
-      onMouseDown={handleMouseDown}
-      onTouchStart={handleTouchStart}
-    >
+    <View style={styles.divider} {...panResponder.panHandlers}>
       <View style={styles.handle} />
     </View>
   );
@@ -123,16 +145,17 @@ export default function ResizableDivider({
 
 const styles = StyleSheet.create({
   divider: {
-    height: 24,
+    height: 28,
     backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
-    cursor: 'ns-resize' as any,
     marginHorizontal: 16,
-    borderRadius: 12,
-    marginVertical: 4,
-    // Make touch target larger for mobile
-    touchAction: 'none' as any,
+    borderRadius: 14,
+    marginVertical: 6,
+    ...(Platform.OS === 'web' ? {
+      cursor: 'ns-resize',
+      touchAction: 'none',
+    } as any : {}),
   },
   handle: {
     width: 60,

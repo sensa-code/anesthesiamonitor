@@ -222,12 +222,12 @@ export default function MonitoringScreen({ navigation, route }: Props) {
     );
   };
 
-  // Calculate dynamic heights for web
-  const dividerHeight = 32; // 24px height + 8px margin
-  const inputSectionHeight = Platform.OS === 'web' && containerHeight > 0
+  // Calculate dynamic heights for all platforms
+  const dividerHeight = 40; // 28px height + 12px margin
+  const inputSectionHeight = containerHeight > 0
     ? containerHeight * splitRatio
     : undefined;
-  const recordsSectionHeight = Platform.OS === 'web' && containerHeight > 0
+  const recordsSectionHeight = containerHeight > 0
     ? containerHeight * (1 - splitRatio) - dividerHeight
     : undefined;
 
@@ -236,7 +236,7 @@ export default function MonitoringScreen({ navigation, route }: Props) {
       <ScrollView
         style={[
           styles.inputSection,
-          Platform.OS === 'web' && inputSectionHeight
+          inputSectionHeight
             ? { maxHeight: inputSectionHeight, minHeight: inputSectionHeight, height: inputSectionHeight, flex: 0 }
             : null,
         ]}
@@ -372,20 +372,18 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
 
-      {Platform.OS === 'web' && (
-        <ResizableDivider
-          currentRatio={splitRatio}
-          onResize={handleResize}
-          containerHeight={containerHeight}
-          minTopRatio={0.1}
-          maxTopRatio={0.9}
-        />
-      )}
+      <ResizableDivider
+        currentRatio={splitRatio}
+        onResize={handleResize}
+        containerHeight={containerHeight}
+        minTopRatio={0.1}
+        maxTopRatio={0.9}
+      />
 
       <View
         style={[
           styles.recordsSection,
-          Platform.OS === 'web' && recordsSectionHeight
+          recordsSectionHeight
             ? { maxHeight: recordsSectionHeight, minHeight: recordsSectionHeight, height: recordsSectionHeight, flex: 0 }
             : null,
         ]}
