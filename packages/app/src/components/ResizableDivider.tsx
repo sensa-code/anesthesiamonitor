@@ -20,8 +20,12 @@ export default function ResizableDivider({
 
   // ============ Native (React Native) Implementation ============
   const panResponder = useMemo(() => PanResponder.create({
+    // Capture phase - claim gesture before parent ScrollViews
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onPanResponderTerminationRequest: () => false, // Don't let other views take over
     onPanResponderGrant: () => {
       startRatio.current = currentRatio;
     },
@@ -35,6 +39,9 @@ export default function ResizableDivider({
     },
     onPanResponderRelease: () => {
       // Drag ended
+    },
+    onPanResponderTerminate: () => {
+      // Gesture was interrupted
     },
   }), [currentRatio, containerHeight, minTopRatio, maxTopRatio, onResize]);
 
