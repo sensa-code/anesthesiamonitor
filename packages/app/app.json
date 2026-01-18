@@ -11,14 +11,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#2196F3"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.anesthesiamonitor",
+      "bundleIdentifier": "com.sensacode.anesthesiamonitor",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.yourcompany.anesthesiamonitor",
+      "package": "com.sensacode.anesthesiamonitor",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -31,9 +33,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "196884ad-1554-4ac0-b6c9-534f0d460511"
       }
     },
-    "owner": "your-expo-username"
+    "owner": "sensa-code",
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { VitalRecord } from '../types';
+import { VitalRecord } from '@anesthesia/core';
 
 interface VitalChartProps {
   records: VitalRecord[];

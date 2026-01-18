@@ -9,45 +9,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SPECIES_LABELS, formatDateTime, calculateDuration } from '@anesthesia/core';
 import { RootStackParamList } from '../types';
 import VitalChart from '../components/VitalChart';
-import { exportCSV } from '../utils/csvExport';
+import { exportCSV } from '../services/export';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Results'>;
-
-const SPECIES_LABELS: Record<string, string> = {
-  dog: '犬',
-  cat: '貓',
-  other: '其他',
-};
 
 export default function ResultsScreen({ navigation, route }: Props) {
   const { session } = route.params;
   const [isExporting, setIsExporting] = useState(false);
-
-  const formatDateTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const calculateDuration = (): string => {
-    if (!session.endTime) return '-';
-    const start = new Date(session.startTime).getTime();
-    const end = new Date(session.endTime).getTime();
-    const minutes = Math.round((end - start) / 60000);
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours} 小時 ${mins} 分鐘`;
-    }
-    return `${mins} 分鐘`;
-  };
 
   const handleExportCSV = async () => {
     setIsExporting(true);
@@ -108,7 +79,7 @@ export default function ResultsScreen({ navigation, route }: Props) {
           )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>總時長</Text>
-            <Text style={styles.infoValue}>{calculateDuration()}</Text>
+            <Text style={styles.infoValue}>{calculateDuration(session.startTime, session.endTime)}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>記錄筆數</Text>
@@ -122,9 +93,25 @@ export default function ResultsScreen({ navigation, route }: Props) {
 
             <VitalChart
               records={session.records}
-              title="血壓"
+              title="收縮壓"
               dataKey="systolicBP"
               color="#e53935"
+              unit="mmHg"
+            />
+
+            <VitalChart
+              records={session.records}
+              title="舒張壓"
+              dataKey="diastolicBP"
+              color="#c62828"
+              unit="mmHg"
+            />
+
+            <VitalChart
+              records={session.records}
+              title="平均壓"
+              dataKey="meanBP"
+              color="#ad1457"
               unit="mmHg"
             />
 
@@ -146,10 +133,18 @@ export default function ResultsScreen({ navigation, route }: Props) {
 
             <VitalChart
               records={session.records}
-              title="血氧 SpO2"
+              title="血氧"
               dataKey="spO2"
               color="#1e88e5"
               unit="%"
+            />
+
+            <VitalChart
+              records={session.records}
+              title="呼末二氧化碳"
+              dataKey="etCO2"
+              color="#0277bd"
+              unit="mmHg"
             />
 
             <VitalChart

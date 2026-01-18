@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AnesthesiaSession } from '../types';
+import { AnesthesiaSession } from '@anesthesia/core';
 
 const SESSIONS_KEY = 'anesthesia_sessions';
 
@@ -50,8 +50,4 @@ export async function deleteSession(sessionId: string): Promise<void> {
     console.error('Error deleting session:', error);
     throw error;
   }
-}
-
-export function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }

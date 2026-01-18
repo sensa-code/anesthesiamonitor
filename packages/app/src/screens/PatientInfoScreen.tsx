@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, Species, AnesthesiaSession } from '../types';
-import { generateSessionId } from '../utils/storage';
+import { Species, AnesthesiaSession, generateSessionId } from '@anesthesia/core';
+import { RootStackParamList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PatientInfo'>;
 

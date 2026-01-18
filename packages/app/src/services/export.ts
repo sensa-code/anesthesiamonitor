@@ -1,78 +1,12 @@
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
-import { AnesthesiaSession, VitalRecord } from '../types';
-
-const SPECIES_LABELS: Record<string, string> = {
-  dog: '犬',
-  cat: '貓',
-  other: '其他',
-};
-
-function formatTimestamp(timestamp: string): string {
-  const date = new Date(timestamp);
-  return date.toLocaleString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
-function escapeCSV(value: string | number): string {
-  const str = String(value);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
-
-export function generateCSV(session: AnesthesiaSession): string {
-  const lines: string[] = [];
-
-  // Patient info header
-  lines.push('病患資料');
-  lines.push(`病患名稱,${escapeCSV(session.patientInfo.patientName)}`);
-  lines.push(`病例編號,${escapeCSV(session.patientInfo.caseNumber)}`);
-  lines.push(`體重 (kg),${session.patientInfo.weight}`);
-  lines.push(`動物種別,${SPECIES_LABELS[session.patientInfo.species]}`);
-  lines.push(`開始時間,${formatTimestamp(session.startTime)}`);
-  if (session.endTime) {
-    lines.push(`結束時間,${formatTimestamp(session.endTime)}`);
-  }
-  lines.push('');
-
-  // Vital records header
-  lines.push('生理數值記錄');
-  lines.push(
-    '時間,收縮壓 (mmHg),舒張壓 (mmHg),心跳 (bpm),呼吸 (次/分),血氧 SpO2 (%),麻醉濃度 (%),體溫 (°C),備註'
-  );
-
-  // Vital records data
-  const formatValue = (value: number | null): string => {
-    return value !== null ? String(value) : '';
-  };
-
-  session.records.forEach((record: VitalRecord) => {
-    lines.push(
-      [
-        formatTimestamp(record.timestamp),
-        formatValue(record.systolicBP),
-        formatValue(record.diastolicBP),
-        formatValue(record.heartRate),
-        formatValue(record.respiratoryRate),
-        formatValue(record.spO2),
-        formatValue(record.anesthesiaConc),
-        formatValue(record.temperature),
-        escapeCSV(record.notes || ''),
-      ].join(',')
-    );
-  });
-
-  return lines.join('\n');
-}
+import {
+  AnesthesiaSession,
+  VitalRecord,
+  SPECIES_LABELS,
+  generateCSV,
+} from '@anesthesia/core';
 
 function generateSVGChart(
   records: VitalRecord[],
@@ -144,9 +78,12 @@ function exportPDFWeb(session: AnesthesiaSession): void {
     <h2>生理數值趨勢圖</h2>
     <div class="charts-grid">
       ${generateSVGChart(session.records, 'systolicBP', '收縮壓', '#e53935', 'mmHg')}
+      ${generateSVGChart(session.records, 'diastolicBP', '舒張壓', '#c62828', 'mmHg')}
+      ${generateSVGChart(session.records, 'meanBP', '平均壓', '#ad1457', 'mmHg')}
       ${generateSVGChart(session.records, 'heartRate', '心跳', '#d81b60', 'bpm')}
       ${generateSVGChart(session.records, 'respiratoryRate', '呼吸', '#8e24aa', '次/分')}
-      ${generateSVGChart(session.records, 'spO2', '血氧 SpO2', '#1e88e5', '%')}
+      ${generateSVGChart(session.records, 'spO2', '血氧', '#1e88e5', '%')}
+      ${generateSVGChart(session.records, 'etCO2', '呼末二氧化碳', '#0277bd', 'mmHg')}
       ${generateSVGChart(session.records, 'anesthesiaConc', '麻醉濃度', '#43a047', '%')}
       ${generateSVGChart(session.records, 'temperature', '體溫', '#fb8c00', '°C')}
     </div>
@@ -201,10 +138,12 @@ function exportPDFWeb(session: AnesthesiaSession): void {
             <th>時間</th>
             <th>收縮壓<br>(mmHg)</th>
             <th>舒張壓<br>(mmHg)</th>
+            <th>平均壓<br>(mmHg)</th>
             <th>心跳<br>(bpm)</th>
             <th>呼吸<br>(次/分)</th>
-            <th>SpO2<br>(%)</th>
-            <th>麻醉<br>(%)</th>
+            <th>血氧<br>(%)</th>
+            <th>呼末二氧化碳<br>(mmHg)</th>
+            <th>麻醉濃度<br>(%)</th>
             <th>體溫<br>(°C)</th>
             <th>備註</th>
           </tr>
@@ -215,9 +154,11 @@ function exportPDFWeb(session: AnesthesiaSession): void {
               <td>${new Date(r.timestamp).toLocaleTimeString('zh-TW')}</td>
               <td>${r.systolicBP !== null ? r.systolicBP : '-'}</td>
               <td>${r.diastolicBP !== null ? r.diastolicBP : '-'}</td>
+              <td>${r.meanBP !== null ? r.meanBP : '-'}</td>
               <td>${r.heartRate !== null ? r.heartRate : '-'}</td>
               <td>${r.respiratoryRate !== null ? r.respiratoryRate : '-'}</td>
               <td>${r.spO2 !== null ? r.spO2 : '-'}</td>
+              <td>${r.etCO2 !== null ? r.etCO2 : '-'}</td>
               <td>${r.anesthesiaConc !== null ? r.anesthesiaConc : '-'}</td>
               <td>${r.temperature !== null ? r.temperature : '-'}</td>
               <td class="notes">${r.notes || ''}</td>

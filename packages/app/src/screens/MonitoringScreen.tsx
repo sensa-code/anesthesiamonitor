@@ -11,9 +11,10 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, VitalRecord, AnesthesiaSession } from '../types';
+import { VitalRecord, AnesthesiaSession, parseNumber, formatTime } from '@anesthesia/core';
+import { RootStackParamList } from '../types';
 import VitalInput from '../components/VitalInput';
-import { saveSession } from '../utils/storage';
+import { saveSession } from '../services/storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Monitoring'>;
 
@@ -21,9 +22,11 @@ export default function MonitoringScreen({ navigation, route }: Props) {
   const [session, setSession] = useState<AnesthesiaSession>(route.params.session);
   const [systolicBP, setSystolicBP] = useState('');
   const [diastolicBP, setDiastolicBP] = useState('');
+  const [meanBP, setMeanBP] = useState('');
   const [heartRate, setHeartRate] = useState('');
   const [respiratoryRate, setRespiratoryRate] = useState('');
   const [spO2, setSpO2] = useState('');
+  const [etCO2, setEtCO2] = useState('');
   const [anesthesiaConc, setAnesthesiaConc] = useState('');
   const [temperature, setTemperature] = useState('');
   const [notes, setNotes] = useState('');
@@ -44,19 +47,14 @@ export default function MonitoringScreen({ navigation, route }: Props) {
   const clearInputs = () => {
     setSystolicBP('');
     setDiastolicBP('');
+    setMeanBP('');
     setHeartRate('');
     setRespiratoryRate('');
     setSpO2('');
+    setEtCO2('');
     setAnesthesiaConc('');
     setTemperature('');
     setNotes('');
-  };
-
-  const parseNumber = (value: string): number | null => {
-    const trimmed = value.trim();
-    if (trimmed === '') return null;
-    const num = parseFloat(trimmed);
-    return isNaN(num) ? null : num;
   };
 
   const handleSaveRecord = () => {
@@ -66,9 +64,11 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         : new Date().toISOString(),
       systolicBP: parseNumber(systolicBP),
       diastolicBP: parseNumber(diastolicBP),
+      meanBP: parseNumber(meanBP),
       heartRate: parseNumber(heartRate),
       respiratoryRate: parseNumber(respiratoryRate),
       spO2: parseNumber(spO2),
+      etCO2: parseNumber(etCO2),
       anesthesiaConc: parseNumber(anesthesiaConc),
       temperature: parseNumber(temperature),
       notes: notes.trim(),
@@ -106,9 +106,11 @@ export default function MonitoringScreen({ navigation, route }: Props) {
     const record = session.records[index];
     setSystolicBP(record.systolicBP !== null ? record.systolicBP.toString() : '');
     setDiastolicBP(record.diastolicBP !== null ? record.diastolicBP.toString() : '');
+    setMeanBP(record.meanBP !== null ? record.meanBP.toString() : '');
     setHeartRate(record.heartRate !== null ? record.heartRate.toString() : '');
     setRespiratoryRate(record.respiratoryRate !== null ? record.respiratoryRate.toString() : '');
     setSpO2(record.spO2 !== null ? record.spO2.toString() : '');
+    setEtCO2(record.etCO2 !== null ? record.etCO2.toString() : '');
     setAnesthesiaConc(record.anesthesiaConc !== null ? record.anesthesiaConc.toString() : '');
     setTemperature(record.temperature !== null ? record.temperature.toString() : '');
     setNotes(record.notes);
@@ -162,15 +164,6 @@ export default function MonitoringScreen({ navigation, route }: Props) {
     }
   };
 
-  const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('zh-TW', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
-
   const renderRecordItem = ({ item, index }: { item: VitalRecord; index: number }) => {
     const actualIndex = session.records.length - 1 - index; // 因為列表是反向顯示的
     const isEditing = editingIndex === actualIndex;
@@ -198,11 +191,14 @@ export default function MonitoringScreen({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.recordValues}>
-          <Text style={styles.recordValue}>BP: {item.systolicBP ?? '-'}/{item.diastolicBP ?? '-'}</Text>
-          <Text style={styles.recordValue}>HR: {item.heartRate ?? '-'}</Text>
-          <Text style={styles.recordValue}>RR: {item.respiratoryRate ?? '-'}</Text>
-          <Text style={styles.recordValue}>SpO2: {item.spO2 !== null ? `${item.spO2}%` : '-'}</Text>
-          <Text style={styles.recordValue}>麻醉: {item.anesthesiaConc !== null ? `${item.anesthesiaConc}%` : '-'}</Text>
+          <Text style={styles.recordValue}>收縮壓: {item.systolicBP ?? '-'}</Text>
+          <Text style={styles.recordValue}>舒張壓: {item.diastolicBP ?? '-'}</Text>
+          <Text style={styles.recordValue}>平均壓: {item.meanBP ?? '-'}</Text>
+          <Text style={styles.recordValue}>心跳: {item.heartRate ?? '-'}</Text>
+          <Text style={styles.recordValue}>呼吸: {item.respiratoryRate ?? '-'}</Text>
+          <Text style={styles.recordValue}>血氧: {item.spO2 !== null ? `${item.spO2}%` : '-'}</Text>
+          <Text style={styles.recordValue}>呼末二氧化碳: {item.etCO2 ?? '-'}</Text>
+          <Text style={styles.recordValue}>麻醉濃度: {item.anesthesiaConc !== null ? `${item.anesthesiaConc}%` : '-'}</Text>
           <Text style={styles.recordValue}>體溫: {item.temperature !== null ? `${item.temperature}°C` : '-'}</Text>
         </View>
         {item.notes ? <Text style={styles.recordNotes}>備註: {item.notes}</Text> : null}
@@ -219,19 +215,27 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         </View>
 
         <View style={styles.row}>
-          <View style={styles.halfInput}>
+          <View style={styles.thirdInput}>
             <VitalInput
-              label="收縮壓"
+              label="收縮壓(Sys)"
               value={systolicBP}
               onChangeText={setSystolicBP}
               unit="mmHg"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={styles.thirdInput}>
             <VitalInput
-              label="舒張壓"
+              label="舒張壓(Dia)"
               value={diastolicBP}
               onChangeText={setDiastolicBP}
+              unit="mmHg"
+            />
+          </View>
+          <View style={styles.thirdInput}>
+            <VitalInput
+              label="平均壓(MAP)"
+              value={meanBP}
+              onChangeText={setMeanBP}
               unit="mmHg"
             />
           </View>
@@ -240,7 +244,7 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <VitalInput
-              label="心跳"
+              label="心跳(HR)"
               value={heartRate}
               onChangeText={setHeartRate}
               unit="bpm"
@@ -248,7 +252,7 @@ export default function MonitoringScreen({ navigation, route }: Props) {
           </View>
           <View style={styles.halfInput}>
             <VitalInput
-              label="呼吸"
+              label="呼吸(RR)"
               value={respiratoryRate}
               onChangeText={setRespiratoryRate}
               unit="次/分"
@@ -259,7 +263,7 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         <View style={styles.row}>
           <View style={styles.halfInput}>
             <VitalInput
-              label="血氧 SpO2"
+              label="血氧(SpO2)"
               value={spO2}
               onChangeText={setSpO2}
               unit="%"
@@ -267,23 +271,35 @@ export default function MonitoringScreen({ navigation, route }: Props) {
           </View>
           <View style={styles.halfInput}>
             <VitalInput
-              label="麻醉濃度"
+              label="呼末二氧化碳(EtCO2)"
+              value={etCO2}
+              onChangeText={setEtCO2}
+              unit="mmHg"
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.halfInput}>
+            <VitalInput
+              label="麻醉濃度(MAC)"
               value={anesthesiaConc}
               onChangeText={setAnesthesiaConc}
               unit="%"
             />
           </View>
+          <View style={styles.halfInput}>
+            <VitalInput
+              label="體溫(BT)"
+              value={temperature}
+              onChangeText={setTemperature}
+              unit="°C"
+            />
+          </View>
         </View>
 
-        <VitalInput
-          label="體溫"
-          value={temperature}
-          onChangeText={setTemperature}
-          unit="°C"
-        />
-
         <View style={styles.notesContainer}>
-          <Text style={styles.notesLabel}>備註</Text>
+          <Text style={styles.notesLabel}>備註(Others)</Text>
           <TextInput
             style={styles.notesInput}
             value={notes}
@@ -375,6 +391,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   halfInput: {
+    flex: 1,
+  },
+  thirdInput: {
     flex: 1,
   },
   buttonRow: {
