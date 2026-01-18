@@ -16,34 +16,60 @@ export default function ResizableDivider({
   minTopRatio = 0.1,
   maxTopRatio = 0.9,
 }: ResizableDividerProps) {
+  // Use refs to avoid recreating PanResponder on every render
   const startRatio = useRef(currentRatio);
+  const currentRatioRef = useRef(currentRatio);
+  const containerHeightRef = useRef(containerHeight);
+  const onResizeRef = useRef(onResize);
+  const minTopRatioRef = useRef(minTopRatio);
+  const maxTopRatioRef = useRef(maxTopRatio);
+
+  // Update refs when props change
+  useEffect(() => {
+    currentRatioRef.current = currentRatio;
+  }, [currentRatio]);
+
+  useEffect(() => {
+    containerHeightRef.current = containerHeight;
+  }, [containerHeight]);
+
+  useEffect(() => {
+    onResizeRef.current = onResize;
+  }, [onResize]);
+
+  useEffect(() => {
+    minTopRatioRef.current = minTopRatio;
+    maxTopRatioRef.current = maxTopRatio;
+  }, [minTopRatio, maxTopRatio]);
 
   // ============ Native (React Native) Implementation ============
+  // Create PanResponder only once - use refs for all values
   const panResponder = useMemo(() => PanResponder.create({
-    // Capture phase - claim gesture before parent ScrollViews
     onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponderCapture: () => true,
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false, // Don't let other views take over
+    onPanResponderTerminationRequest: () => false,
     onPanResponderGrant: () => {
-      startRatio.current = currentRatio;
+      // Capture the current ratio at the start of the gesture
+      startRatio.current = currentRatioRef.current;
     },
     onPanResponderMove: (_event: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-      if (containerHeight <= 0) return;
+      const height = containerHeightRef.current;
+      if (height <= 0) return;
 
-      const deltaRatio = gestureState.dy / containerHeight;
+      const deltaRatio = gestureState.dy / height;
       let newRatio = startRatio.current + deltaRatio;
-      newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
-      onResize(newRatio);
+      newRatio = Math.max(minTopRatioRef.current, Math.min(maxTopRatioRef.current, newRatio));
+      onResizeRef.current(newRatio);
     },
     onPanResponderRelease: () => {
-      // Drag ended
+      // Gesture ended successfully
     },
     onPanResponderTerminate: () => {
       // Gesture was interrupted
     },
-  }), [currentRatio, containerHeight, minTopRatio, maxTopRatio, onResize]);
+  }), []); // Empty dependency array - PanResponder is created only once
 
   // ============ Web Implementation ============
   const isDragging = useRef(false);
@@ -54,22 +80,25 @@ export default function ResizableDivider({
     e.preventDefault();
     isDragging.current = true;
     startY.current = e.clientY;
-    startRatio.current = currentRatio;
+    startRatio.current = currentRatioRef.current;
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
-  }, [currentRatio]);
+  }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging.current || Platform.OS !== 'web') return;
     e.preventDefault();
 
+    const height = containerHeightRef.current;
+    if (height <= 0) return;
+
     const deltaY = e.clientY - startY.current;
-    const deltaRatio = deltaY / containerHeight;
+    const deltaRatio = deltaY / height;
     let newRatio = startRatio.current + deltaRatio;
 
-    newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
-    onResize(newRatio);
-  }, [containerHeight, minTopRatio, maxTopRatio, onResize]);
+    newRatio = Math.max(minTopRatioRef.current, Math.min(maxTopRatioRef.current, newRatio));
+    onResizeRef.current(newRatio);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     if (Platform.OS !== 'web') return;
@@ -86,21 +115,24 @@ export default function ResizableDivider({
     const touch = e.touches[0];
     isDragging.current = true;
     startY.current = touch.clientY;
-    startRatio.current = currentRatio;
-  }, [currentRatio]);
+    startRatio.current = currentRatioRef.current;
+  }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isDragging.current || Platform.OS !== 'web') return;
     e.preventDefault();
 
+    const height = containerHeightRef.current;
+    if (height <= 0) return;
+
     const touch = e.touches[0];
     const deltaY = touch.clientY - startY.current;
-    const deltaRatio = deltaY / containerHeight;
+    const deltaRatio = deltaY / height;
     let newRatio = startRatio.current + deltaRatio;
 
-    newRatio = Math.max(minTopRatio, Math.min(maxTopRatio, newRatio));
-    onResize(newRatio);
-  }, [containerHeight, minTopRatio, maxTopRatio, onResize]);
+    newRatio = Math.max(minTopRatioRef.current, Math.min(maxTopRatioRef.current, newRatio));
+    onResizeRef.current(newRatio);
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (Platform.OS !== 'web') return;
@@ -110,21 +142,16 @@ export default function ResizableDivider({
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const onMouseMove = (e: MouseEvent) => handleMouseMove(e);
-    const onMouseUp = () => handleMouseUp();
-    const onTouchMove = (e: TouchEvent) => handleTouchMove(e);
-    const onTouchEnd = () => handleTouchEnd();
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
