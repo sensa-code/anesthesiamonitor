@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import { Platform } from 'react-native';
 import {
   AnesthesiaSession,
@@ -179,6 +180,136 @@ function exportPDFWeb(session: AnesthesiaSession): void {
   }
 }
 
+function generatePDFHTML(session: AnesthesiaSession): string {
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('zh-TW');
+  };
+
+  const charts = session.records.length > 0 ? `
+    <h2>生理數值趨勢圖</h2>
+    <div class="charts-grid">
+      ${generateSVGChart(session.records, 'systolicBP', '收縮壓', '#e53935', 'mmHg')}
+      ${generateSVGChart(session.records, 'diastolicBP', '舒張壓', '#c62828', 'mmHg')}
+      ${generateSVGChart(session.records, 'meanBP', '平均壓', '#ad1457', 'mmHg')}
+      ${generateSVGChart(session.records, 'heartRate', '心跳', '#d81b60', 'bpm')}
+      ${generateSVGChart(session.records, 'respiratoryRate', '呼吸', '#8e24aa', '次/分')}
+      ${generateSVGChart(session.records, 'spO2', '血氧', '#1e88e5', '%')}
+      ${generateSVGChart(session.records, 'etCO2', '呼末二氧化碳', '#0277bd', 'mmHg')}
+      ${generateSVGChart(session.records, 'anesthesiaConc', '麻醉濃度', '#43a047', '%')}
+      ${generateSVGChart(session.records, 'temperature', '體溫', '#fb8c00', '°C')}
+    </div>
+  ` : '';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>麻醉記錄 - ${session.patientInfo.patientName}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #2196F3; border-bottom: 2px solid #2196F3; padding-bottom: 10px; }
+        h2 { color: #333; margin-top: 30px; }
+        h3 { color: #666; font-size: 14px; margin: 10px 0 5px 0; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+        .info-table td:first-child { font-weight: bold; width: 120px; color: #666; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .data-table th { background-color: #2196F3; color: white; }
+        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .data-table .notes { text-align: left; max-width: 150px; font-size: 11px; }
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-container { page-break-inside: avoid; }
+      </style>
+    </head>
+    <body>
+      <h1>獸醫麻醉監測記錄</h1>
+
+      <h2>病患資料</h2>
+      <table class="info-table">
+        <tr><td>病患名稱</td><td>${session.patientInfo.patientName}</td></tr>
+        <tr><td>病例編號</td><td>${session.patientInfo.caseNumber}</td></tr>
+        <tr><td>動物種別</td><td>${SPECIES_LABELS[session.patientInfo.species]}</td></tr>
+        <tr><td>體重</td><td>${session.patientInfo.weight} kg</td></tr>
+        <tr><td>開始時間</td><td>${formatTime(session.startTime)}</td></tr>
+        ${session.endTime ? `<tr><td>結束時間</td><td>${formatTime(session.endTime)}</td></tr>` : ''}
+      </table>
+
+      ${charts}
+
+      <h2>生理數值記錄</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>時間</th>
+            <th>收縮壓<br>(mmHg)</th>
+            <th>舒張壓<br>(mmHg)</th>
+            <th>平均壓<br>(mmHg)</th>
+            <th>心跳<br>(bpm)</th>
+            <th>呼吸<br>(次/分)</th>
+            <th>血氧<br>(%)</th>
+            <th>呼末二氧化碳<br>(mmHg)</th>
+            <th>麻醉濃度<br>(%)</th>
+            <th>體溫<br>(°C)</th>
+            <th>備註</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${session.records.map(r => `
+            <tr>
+              <td>${new Date(r.timestamp).toLocaleTimeString('zh-TW')}</td>
+              <td>${r.systolicBP !== null ? r.systolicBP : '-'}</td>
+              <td>${r.diastolicBP !== null ? r.diastolicBP : '-'}</td>
+              <td>${r.meanBP !== null ? r.meanBP : '-'}</td>
+              <td>${r.heartRate !== null ? r.heartRate : '-'}</td>
+              <td>${r.respiratoryRate !== null ? r.respiratoryRate : '-'}</td>
+              <td>${r.spO2 !== null ? r.spO2 : '-'}</td>
+              <td>${r.etCO2 !== null ? r.etCO2 : '-'}</td>
+              <td>${r.anesthesiaConc !== null ? r.anesthesiaConc : '-'}</td>
+              <td>${r.temperature !== null ? r.temperature : '-'}</td>
+              <td class="notes">${r.notes || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+async function exportPDFNative(session: AnesthesiaSession): Promise<void> {
+  const html = generatePDFHTML(session);
+
+  // Generate PDF from HTML
+  const { uri } = await Print.printToFileAsync({
+    html,
+    base64: false,
+  });
+
+  // Move the file to a more accessible location with proper name
+  const fileName = `anesthesia_${session.patientInfo.caseNumber}_${Date.now()}.pdf`;
+  const newPath = `${FileSystem.documentDirectory}${fileName}`;
+
+  await FileSystem.moveAsync({
+    from: uri,
+    to: newPath,
+  });
+
+  // Share the PDF file
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(newPath, {
+      mimeType: 'application/pdf',
+      dialogTitle: '匯出麻醉記錄 PDF',
+      UTI: 'com.adobe.pdf',
+    });
+  } else {
+    throw new Error('分享功能不可用');
+  }
+}
+
 async function exportCSVNative(session: AnesthesiaSession): Promise<void> {
   const csvContent = generateCSV(session);
   const fileName = `anesthesia_${session.patientInfo.caseNumber}_${Date.now()}.csv`;
@@ -207,10 +338,10 @@ export async function exportCSV(session: AnesthesiaSession): Promise<void> {
     if (Platform.OS === 'web') {
       exportPDFWeb(session);
     } else {
-      await exportCSVNative(session);
+      await exportPDFNative(session);
     }
   } catch (error) {
-    console.error('Error exporting CSV:', error);
+    console.error('Error exporting PDF:', error);
     throw error;
   }
 }
