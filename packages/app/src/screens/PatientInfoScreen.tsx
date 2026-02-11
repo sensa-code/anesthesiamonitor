@@ -202,7 +202,7 @@ export default function PatientInfoScreen({ navigation }: Props) {
         visible={unfinishedSession !== null}
         transparent={true}
         animationType="fade"
-        onRequestClose={handleDiscardSession}
+        onRequestClose={() => {}}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

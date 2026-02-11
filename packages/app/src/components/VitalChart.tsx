@@ -20,10 +20,12 @@ export default function VitalChart({
   color,
   unit,
 }: VitalChartProps) {
-  // 過濾掉該欄位為空值的記錄
+  // 過濾掉該欄位為空值或無效值的記錄
   const validRecords = records.filter((r) => {
     const value = r[dataKey];
-    return value !== null && value !== undefined && value !== '';
+    if (value === null || value === undefined || value === '') return false;
+    const num = Number(value);
+    return !isNaN(num) && isFinite(num);
   });
 
   if (validRecords.length === 0) {
@@ -35,7 +37,7 @@ export default function VitalChart({
     );
   }
 
-  const data = validRecords.map((r) => Number(r[dataKey]) || 0);
+  const data = validRecords.map((r) => Number(r[dataKey]));
   const labels = validRecords.map((r, index) => {
     if (validRecords.length <= 6 || index % Math.ceil(validRecords.length / 6) === 0) {
       const date = new Date(r.timestamp);

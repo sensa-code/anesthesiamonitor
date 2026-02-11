@@ -9,7 +9,7 @@ export function generateCSV(session: AnesthesiaSession): string {
   lines.push(`病患名稱,${escapeCSV(session.patientInfo.patientName)}`);
   lines.push(`病例編號,${escapeCSV(session.patientInfo.caseNumber)}`);
   lines.push(`體重 (kg),${session.patientInfo.weight}`);
-  lines.push(`動物種別,${SPECIES_LABELS[session.patientInfo.species]}`);
+  lines.push(`動物種別,${SPECIES_LABELS[session.patientInfo.species] ?? session.patientInfo.species}`);
   lines.push(`開始時間,${formatTimestamp(session.startTime)}`);
   if (session.endTime) {
     lines.push(`結束時間,${formatTimestamp(session.endTime)}`);
