@@ -4,7 +4,13 @@
       "Bash(cd:*)",
       "Bash(du:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:web:*)",
+      "Bash(timeout:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
