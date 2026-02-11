@@ -5,6 +5,7 @@ import { RootStackParamList } from '../types';
 import PatientInfoScreen from '../screens/PatientInfoScreen';
 import MonitoringScreen from '../screens/MonitoringScreen';
 import BatchMonitoringScreen from '../screens/BatchMonitoringScreen';
+import HistoryScreen from '../screens/HistoryScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,6 +29,11 @@ export default function AppNavigator() {
           name="PatientInfo"
           component={PatientInfoScreen}
           options={{ title: '病患資料' }}
+        />
+        <Stack.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ title: '歷史記錄' }}
         />
         <Stack.Screen
           name="Monitoring"

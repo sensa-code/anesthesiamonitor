@@ -210,6 +210,13 @@ export default function PatientInfoScreen({ navigation }: Props) {
             <Text style={styles.buttonText}>批次記錄</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => navigation.navigate('History')}
+        >
+          <Text style={styles.historyButtonText}>歷史記錄</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <Modal
@@ -327,6 +334,21 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  historyButton: {
+    marginTop: 12,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  historyButtonText: {
+    color: '#2196F3',
+    fontSize: 16,
     fontWeight: '600',
   },
   loadingContainer: {

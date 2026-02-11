@@ -17,7 +17,7 @@ import { exportCSV } from '../services/export';
 type Props = NativeStackScreenProps<RootStackParamList, 'Results'>;
 
 export default function ResultsScreen({ navigation, route }: Props) {
-  const { session } = route.params;
+  const { session, fromHistory } = route.params;
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportCSV = async () => {
@@ -32,7 +32,11 @@ export default function ResultsScreen({ navigation, route }: Props) {
   };
 
   const handleGoHome = () => {
-    navigation.popToTop();
+    if (fromHistory) {
+      navigation.goBack();
+    } else {
+      navigation.popToTop();
+    }
   };
 
   const handleBackToEdit = () => {
@@ -176,12 +180,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
 
       <View style={styles.buttonContainer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.backButton]}
-            onPress={handleBackToEdit}
-          >
-            <Text style={styles.buttonText}>返回編輯</Text>
-          </TouchableOpacity>
+          {!fromHistory && (
+            <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={handleBackToEdit}
+            >
+              <Text style={styles.buttonText}>返回編輯</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.button, styles.exportButton]}
