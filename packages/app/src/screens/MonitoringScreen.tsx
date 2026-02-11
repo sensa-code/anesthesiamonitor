@@ -180,6 +180,10 @@ export default function MonitoringScreen({ navigation, route }: Props) {
     }
   };
 
+  const handleSwitchToBatch = () => {
+    navigation.replace('BatchMonitoring', { session, isResumed: true });
+  };
+
   const renderRecordItem = ({ item, index }: { item: VitalRecord; index: number }) => {
     const actualIndex = session.records.length - 1 - index; // 因為列表是反向顯示的
     const isEditing = editingIndex === actualIndex;
@@ -400,9 +404,14 @@ export default function MonitoringScreen({ navigation, route }: Props) {
         />
       </View>
 
-      <TouchableOpacity style={styles.endButton} onPress={handleEndRecording}>
-        <Text style={styles.endButtonText}>結束記錄</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomButtons}>
+        <TouchableOpacity style={styles.switchBatchButton} onPress={handleSwitchToBatch}>
+          <Text style={styles.switchBatchButtonText}>切換批次記錄</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.endButton} onPress={handleEndRecording}>
+          <Text style={styles.endButtonText}>結束記錄</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -609,18 +618,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     textAlignVertical: 'top',
   },
-  endButton: {
-    backgroundColor: '#f44336',
-    height: 52,
+  bottomButtons: {
+    flexDirection: 'row',
+    gap: 12,
     marginHorizontal: 16,
     marginBottom: 16,
+  },
+  switchBatchButton: {
+    flex: 1,
+    backgroundColor: '#FF9800',
+    height: 52,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  switchBatchButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  endButton: {
+    flex: 1,
+    backgroundColor: '#f44336',
+    height: 52,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   endButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

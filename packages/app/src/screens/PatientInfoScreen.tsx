@@ -96,10 +96,9 @@ export default function PatientInfoScreen({ navigation }: Props) {
     return true;
   };
 
-  const handleStartRecording = () => {
-    if (!validateForm()) return;
-
-    const session: AnesthesiaSession = {
+  const createSession = (): AnesthesiaSession | null => {
+    if (!validateForm()) return null;
+    return {
       id: generateSessionId(),
       patientInfo: {
         hospitalName: hospitalName.trim(),
@@ -111,8 +110,18 @@ export default function PatientInfoScreen({ navigation }: Props) {
       startTime: new Date().toISOString(),
       records: [],
     };
+  };
 
+  const handleStartRecording = () => {
+    const session = createSession();
+    if (!session) return;
     navigation.navigate('Monitoring', { session });
+  };
+
+  const handleStartBatchRecording = () => {
+    const session = createSession();
+    if (!session) return;
+    navigation.navigate('BatchMonitoring', { session });
   };
 
   if (isLoading) {
@@ -193,9 +202,14 @@ export default function PatientInfoScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleStartRecording}>
-          <Text style={styles.buttonText}>開始記錄</Text>
-        </TouchableOpacity>
+        <View style={styles.startButtonRow}>
+          <TouchableOpacity style={[styles.button, styles.realtimeButton]} onPress={handleStartRecording}>
+            <Text style={styles.buttonText}>即時記錄</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.batchButton]} onPress={handleStartBatchRecording}>
+            <Text style={styles.buttonText}>批次記錄</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       <Modal
@@ -292,13 +306,23 @@ const styles = StyleSheet.create({
   picker: {
     height: 48,
   },
+  startButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
   button: {
-    backgroundColor: '#2196F3',
+    flex: 1,
     height: 52,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+  },
+  realtimeButton: {
+    backgroundColor: '#2196F3',
+  },
+  batchButton: {
+    backgroundColor: '#FF9800',
   },
   buttonText: {
     color: '#fff',

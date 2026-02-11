@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import PatientInfoScreen from '../screens/PatientInfoScreen';
 import MonitoringScreen from '../screens/MonitoringScreen';
+import BatchMonitoringScreen from '../screens/BatchMonitoringScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +33,11 @@ export default function AppNavigator() {
           name="Monitoring"
           component={MonitoringScreen}
           options={{ title: '生理監測' }}
+        />
+        <Stack.Screen
+          name="BatchMonitoring"
+          component={BatchMonitoringScreen}
+          options={{ title: '批次記錄' }}
         />
         <Stack.Screen
           name="Results"
