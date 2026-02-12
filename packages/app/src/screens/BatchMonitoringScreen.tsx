@@ -207,7 +207,18 @@ export default function BatchMonitoringScreen({ navigation, route }: Props) {
       const record = rowToRecord(row, session.startTime);
       if (record) records.push(record);
     }
-    const updatedSession = { ...session, records };
+    // 更新 startTime 以反映批次輸入的最早記錄時間
+    let startTime = session.startTime;
+    if (records.length > 0) {
+      const timestamps = records.map(r => new Date(r.timestamp).getTime()).filter(t => !isNaN(t));
+      if (timestamps.length > 0) {
+        const earliest = Math.min(...timestamps);
+        if (earliest < new Date(startTime).getTime()) {
+          startTime = new Date(earliest).toISOString();
+        }
+      }
+    }
+    const updatedSession = { ...session, records, startTime };
     saveSession(updatedSession);
     navigation.replace('Monitoring', { session: updatedSession, isResumed: true });
   };
@@ -230,10 +241,23 @@ export default function BatchMonitoringScreen({ navigation, route }: Props) {
         if (record) records.push(record);
       }
 
+      // 批次記錄模式：startTime/endTime 應以實際記錄的時間範圍為準
+      // 而非 App 操作時間（因為是事後補登）
+      let startTime = session.startTime;
+      let endTime = new Date().toISOString();
+      if (records.length > 0) {
+        const timestamps = records.map(r => new Date(r.timestamp).getTime()).filter(t => !isNaN(t));
+        if (timestamps.length > 0) {
+          startTime = new Date(Math.min(...timestamps)).toISOString();
+          endTime = new Date(Math.max(...timestamps)).toISOString();
+        }
+      }
+
       const finalSession: AnesthesiaSession = {
         ...session,
         records,
-        endTime: new Date().toISOString(),
+        startTime,
+        endTime,
       };
       await saveSession(finalSession);
       navigation.replace('Results', { session: finalSession });
